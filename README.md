@@ -6,3 +6,4 @@ HOE MAAK JE HET ?
 PLANNEN DIT WEEKEND? 
 zO LEKKER EEN BIERTJE DRINKEN? 
 Nee dankje haha
+Ja lekker, maar ik moet zo naar de tandarts
