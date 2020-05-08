@@ -1,3 +1,6 @@
 # C1-AGV-Project
 Test
 hoi
+HA DIE LUC
+HOE MAAK JE HET ? 
+PLANNEN DIT WEEKEND? 
