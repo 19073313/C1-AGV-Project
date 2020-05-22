@@ -30,29 +30,29 @@ void loop() {
 //getting the red color
     digitalWrite(s2, LOW);
     digitalWrite(s3, LOW);
-    data = pulseIn(sensorData, LOW);
+    data = pulseIn(dataSensor, LOW);
     //zien welke waardes hij aangeeft.
-    Serial.print("red data=")
+    Serial.print("red data=");
     Serial.print(data);
     Serial.print("");
     delay(20);
 //getting the green color
     digitalWrite(s2, LOW);
     digitalWrite(s3, HIGH);
-    data = pulseIn(sensorData, LOW);
+    data = pulseIn(dataSensor, LOW);
     //zien welke waardes hij aangeeft.
-    Serial.print("green data=")
+    Serial.print("green data=");
     Serial.print(data);
     Serial.print("");
     delay(20);
  //getting the blue color
     digitalWrite(s2, HIGH);
     digitalWrite(s3, HIGH);
-    data = pulseIn(sensorData, LOW);
+    data = pulseIn(dataSensor, LOW);
     //zien welke waardes hij aangeeft.
-    Serial.print("green data=")
+    Serial.print("green data=");
     Serial.print(data);
     Serial.print("");
     delay(20);
-    delay(2000)
+    delay(2000);
 }
