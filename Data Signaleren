@@ -39,19 +39,19 @@ void loop() {
 //getting the red color
     digitalWrite(s2, LOW);
     digitalWrite(s3, LOW);
-    dataR = pulseIn(sensorData, LOW);
+    dataR = pulseIn(dataSensor, LOW);
     delay(20);
 
   //getting the green color
     digitalWrite(s2, LOW);
     digitalWrite(s3, HIGH);
-    dataG = pulseIn(sensorData, LOW);
+    dataG = pulseIn(dataSensor, LOW);
     delay(20);
 
   //getting the blue color
     digitalWrite(s2, HIGH);
     digitalWrite(s3, HIGH);
-    dataB = pulseIn(sensorData, LOW);
+    dataB = pulseIn(dataSensor, LOW);
     delay(20);
     
 
@@ -75,10 +75,10 @@ void loop() {
       Serial.print("Blauwe kleur");
       analogWrite(ledRed, 0);   
       analogWrite(ledBlue, 255);  
-      analogWrite(ledGreen, 0;  
+      analogWrite(ledGreen, 0);  
     }
 }
-void ifred()
+bool ifred()
 {
     //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
     if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
@@ -91,7 +91,7 @@ else {
   
 }
 }
-void ifgreen()
+bool ifgreen()
 {
      //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
     if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
@@ -105,7 +105,7 @@ else {
 }
 
 }
-void ifblue()
+bool ifblue()
 {
     //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
     if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
