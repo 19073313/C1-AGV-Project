@@ -1,0 +1,120 @@
+ 
+  //Pins
+  int s0 = 1;
+  int s1 = 2;
+  int s2 = 3;
+  int s3 = 4;
+  int dataSensor = 9;
+  
+  //Dit is voor een RGB led. Dit hebben wij dus niet perse nodig. Kan wel handig zijn om mee te testen.
+  int ledRed= 5;
+  int ledGreen=6;
+  int ledBlue = 7;
+
+  //Globale variabele om data op te slaan
+  int dataR = 0;
+  int dataB = 0;
+  int dataG = 0;
+  
+void setup() {
+  
+  //pin configuratie
+   pinMode(s0, OUTPUT);
+   pinMode(s1, OUTPUT);
+   pinMode(s2, OUTPUT);
+   pinMode(s3, OUTPUT);
+   pinMode(dataSensor, INPUT);
+
+
+    Serial.begin(9600);
+   // FREQUENTIE SCALE
+   digitalWrite(s0, HIGH);
+   digitalWrite(s1, HIGH);
+   
+  
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+//getting the red color
+    digitalWrite(s2, LOW);
+    digitalWrite(s3, LOW);
+    dataR = pulseIn(sensorData, LOW);
+    delay(20);
+
+  //getting the green color
+    digitalWrite(s2, LOW);
+    digitalWrite(s3, HIGH);
+    dataG = pulseIn(sensorData, LOW);
+    delay(20);
+
+  //getting the blue color
+    digitalWrite(s2, HIGH);
+    digitalWrite(s3, HIGH);
+    dataB = pulseIn(sensorData, LOW);
+    delay(20);
+    
+
+    //De analogwrite is voor een eventuele RGBled. Dit hoeven wij dus niet te doen. Je kan er wel goed mee testen.
+    if(ifred())
+    {
+      Serial.print("rode kleur");
+      analogWrite(ledRed, 255);   
+      analogWrite(ledBlue, 0);  
+      analogWrite(ledGreen, 0);  
+    }
+    if(ifgreen())
+    {
+      Serial.print("Groene kleur");
+      analogWrite(ledRed, 0);   
+      analogWrite(ledBlue, 0);  
+      analogWrite(ledGreen, 255);  
+    }
+    if(ifblue())
+    {
+      Serial.print("Blauwe kleur");
+      analogWrite(ledRed, 0);   
+      analogWrite(ledBlue, 255);  
+      analogWrite(ledGreen, 0;  
+    }
+}
+void ifred()
+{
+    //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
+    if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
+    {
+      return true;
+     
+    }
+else {
+  return false;
+  
+}
+}
+void ifgreen()
+{
+     //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
+    if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
+    {
+      return true;
+     
+    }
+else {
+  return false;
+  
+}
+
+}
+void ifblue()
+{
+    //Deze waardes kloppen dus nog niet. Dit moet eerst veranderd worden door te checken met de sensor.
+    if((dataR<53 && dataR >47) && (dataG<44 && dataG > 38) && (dataB< 34 && dataB > 28))
+    {
+      return true;
+     
+    }
+else {
+  return false;
+  
+}
+}
