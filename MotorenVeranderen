@@ -1,0 +1,40 @@
+
+#ifndef Motors_h
+#define Motors_h
+
+#include <Arduino.h>
+
+class Motors
+{
+  public:  
+  
+    // constructor (doesn't do anything)
+    Motors();
+    
+    // enable/disable flipping of motors
+    static void flipLinkerMotor(boolean flip);
+    static void flipRechterMotor(boolean flip);
+    
+    // set speed for left, right, or both motors
+    static void LinksSnelheid(int speed);
+    static void RechtsSnelheid(int speed);
+    static void GeheleSnelheid(int linkerSnelheid, int rechterSnelheid);
+    
+  private:
+
+    static inline void initialiseren1()
+    {
+      static boolean initialiseren = false;
+
+      if (!initialiseren)
+      {
+        initialiseren = true;
+        initialiseren2();
+      }
+    }
+    
+    // initializes timer1 for proper PWM generation
+    static void initialiseren2();
+};
+
+#endif
