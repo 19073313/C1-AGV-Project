@@ -1,0 +1,94 @@
+#include <ZumoMotors.h>
+#include <Pushbutton.h>
+#include <Wire.h>
+
+#define SPEED 70 
+#define TURNING 50
+#define STOP 0
+
+const int USLO = A0;  //trigPin ultrasoon links
+const int USLI = A1;  //echoPin ultrasoon links
+const int USRO = A2;  //trigPin ultrasoon rechts
+const int USRI = A3;  //echoPin ultrasoon rechts
+long duratie, afstand, USL, USR; //duratie, afstand, ultrasoon sensor links, ultrasoon sensor rechts
+
+ZumoMotors motors;
+Pushbutton button(ZUMO_BUTTON);
+
+
+void setup() {
+  pinMode(USLO, OUTPUT);
+  pinMode(USLI, INPUT);
+  pinMode(USRO, OUTPUT);
+  pinMode(USRI, INPUT);
+  Serial.begin(9600);
+  Serial.println("ready");
+}
+
+void loop() {
+  button.waitForButton();
+  AfstandMeten (USLO, USLI);
+  USL = afstand;
+  AfstandMeten (USRO, USRI);
+  USR = afstand;
+  while(1){
+    motors.setLeftSpeed(SPEED);
+    motors.setRightSpeed(SPEED);
+    while((USL>=10)&&(USR>=10)){
+      motors.setLeftSpeed(SPEED);
+      motors.setRightSpeed(SPEED);
+      AfstandMeten (USLO, USLI);
+      USL = afstand;
+      AfstandMeten (USRO, USRI);
+      USR = afstand;
+
+      Serial.print("Afstand links: ");
+      Serial.print(USL);
+      Serial.print("  ");
+      Serial.print("Afstand rechts: ");
+      Serial.println(USR);
+      delay(1);
+      while((USR>=31)&&(USL<31)){
+        Serial.println("Links");
+        motors.setLeftSpeed(TURNING);
+        AfstandMeten (USLO, USLI);
+        USL = afstand;
+        AfstandMeten (USRO, USRI);
+        USR = afstand;
+      }
+      while((USL>=31)&&(USR<31)){
+        Serial.println("Rechts");
+        motors.setRightSpeed(TURNING);
+        AfstandMeten (USLO, USLI);
+        USL = afstand;
+        AfstandMeten (USRO, USRI);
+        USR = afstand;
+      }
+   }
+   if((USL<10)||(USR<10)){
+     motors.setSpeeds(STOP, STOP);
+     Serial.println("stop");
+     AfstandMeten (USLO, USLI);
+     USL = afstand;
+     AfstandMeten (USRO, USRI);
+     USR = afstand;
+
+     Serial.print("Afstand links: ");
+     Serial.print(USL);
+     Serial.print("  ");
+     Serial.print("Afstand rechts: ");
+     Serial.println(USR);
+     delay(1);
+   }
+  }
+}
+
+void AfstandMeten (int trigPin, int echoPin){
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duratie = pulseIn(echoPin, HIGH);
+  afstand = duratie*0.034/2;
+}
