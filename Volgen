@@ -2,12 +2,13 @@
 #include <Pushbutton.h>
 #include <Wire.h>
 
-#define SPEED 70 
-#define TURNING 50
+#define SPEEDL 100 
+#define SPEEDR 105
+#define TURNING 100
 #define STOP 0
 
-const int USLO = A0;  //trigPin ultrasoon links
-const int USLI = A1;  //echoPin ultrasoon links
+const int USLO = A4;  //trigPin ultrasoon links
+const int USLI = A5;  //echoPin ultrasoon links
 const int USRO = A2;  //trigPin ultrasoon rechts
 const int USRI = A3;  //echoPin ultrasoon rechts
 long duratie, afstand, USL, USR; //duratie, afstand, ultrasoon sensor links, ultrasoon sensor rechts
@@ -27,20 +28,14 @@ void setup() {
 
 void loop() {
   button.waitForButton();
-  AfstandMeten (USLO, USLI);
-  USL = afstand;
-  AfstandMeten (USRO, USRI);
-  USR = afstand;
+  SensorMeten();
   while(1){
-    motors.setLeftSpeed(SPEED);
-    motors.setRightSpeed(SPEED);
-    while((USL>=10)&&(USR>=10)){
-      motors.setLeftSpeed(SPEED);
-      motors.setRightSpeed(SPEED);
-      AfstandMeten (USLO, USLI);
-      USL = afstand;
-      AfstandMeten (USRO, USRI);
-      USR = afstand;
+    motors.setLeftSpeed(SPEEDL);   //rechtdoor rijden
+    motors.setRightSpeed(SPEEDR);
+    while((USL>=5)&&(USR>=5)){  //als de afstand links en rechts meer dan 5 cm is, rechtdoor rijden
+      motors.setLeftSpeed(SPEEDL);
+      motors.setRightSpeed(SPEEDR);
+      SensorMeten();
 
       Serial.print("Afstand links: ");
       Serial.print(USL);
@@ -48,31 +43,23 @@ void loop() {
       Serial.print("Afstand rechts: ");
       Serial.println(USR);
       delay(1);
-      while((USR>=31)&&(USL<31)){
+      while((USR>=31)&&(USL<31)){   //naar links sturen
         Serial.println("Links");
-        motors.setLeftSpeed(TURNING);
-        AfstandMeten (USLO, USLI);
-        USL = afstand;
-        AfstandMeten (USRO, USRI);
-        USR = afstand;
-      }
-      while((USL>=31)&&(USR<31)){
-        Serial.println("Rechts");
+        motors.setLeftSpeed(STOP);
         motors.setRightSpeed(TURNING);
-        AfstandMeten (USLO, USLI);
-        USL = afstand;
-        AfstandMeten (USRO, USRI);
-        USR = afstand;
+        SensorMeten();
+      }
+      while((USL>=31)&&(USR<31)){   //naar rechts sturen
+        Serial.println("Rechts");
+        motors.setLeftSpeed(TURNING);
+        motors.setRightSpeed(STOP);
+        SensorMeten();
       }
    }
    if((USL<10)||(USR<10)){
      motors.setSpeeds(STOP, STOP);
      Serial.println("stop");
-     AfstandMeten (USLO, USLI);
-     USL = afstand;
-     AfstandMeten (USRO, USRI);
-     USR = afstand;
-
+     SensorMeten();
      Serial.print("Afstand links: ");
      Serial.print(USL);
      Serial.print("  ");
@@ -81,6 +68,13 @@ void loop() {
      delay(1);
    }
   }
+}
+void SensorMeten (){
+  AfstandMeten (USLO, USLI);
+  USL = afstand;
+  delay(10);
+  AfstandMeten (USRO, USRI);
+  USR = afstand;
 }
 
 void AfstandMeten (int trigPin, int echoPin){
