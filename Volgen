@@ -3,7 +3,7 @@
 #include <Wire.h>
 
 #define SPEEDL 100 
-#define SPEEDR 105
+#define SPEEDR 100
 #define TURNING 100
 #define STOP 0
 
@@ -32,7 +32,8 @@ void loop() {
   while(1){
     motors.setLeftSpeed(SPEEDL);   //rechtdoor rijden
     motors.setRightSpeed(SPEEDR);
-    while((USL>=5)&&(USR>=5)){  //als de afstand links en rechts meer dan 5 cm is, rechtdoor rijden
+    SensorMeten();
+    while(((USL>=5)&&(USR>=5))&&((USL<=40)&&(USR<=40))){  //als de afstand links en rechts meer dan 5 cm is, rechtdoor rijden
       motors.setLeftSpeed(SPEEDL);
       motors.setRightSpeed(SPEEDR);
       SensorMeten();
@@ -48,15 +49,27 @@ void loop() {
         motors.setLeftSpeed(STOP);
         motors.setRightSpeed(TURNING);
         SensorMeten();
+        while((USL>40)&&(USR>40)){
+          Serial.println("Links  2");
+          motors.setLeftSpeed(STOP);
+          motors.setRightSpeed(TURNING);
+          SensorMeten();
+        }
       }
       while((USL>=31)&&(USR<31)){   //naar rechts sturen
         Serial.println("Rechts");
         motors.setLeftSpeed(TURNING);
         motors.setRightSpeed(STOP);
         SensorMeten();
+        while((USL>40)&&(USR>40)){
+          Serial.println("Rechts  2");
+          motors.setLeftSpeed(TURNING);
+          motors.setRightSpeed(STOP);
+          SensorMeten();
+        }
       }
    }
-   if((USL<10)||(USR<10)){
+   while(((USL<5)||(USR<5))||((USL>40)&&(USR>40))){
      motors.setSpeeds(STOP, STOP);
      Serial.println("stop");
      SensorMeten();
