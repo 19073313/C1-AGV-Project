@@ -1,0 +1,52 @@
+#include <ZumoMotors.h>
+#include <Pushbutton.h>
+#include <Wire.h>
+
+int value, gem, totaal,value1, gem1, totaal1, verschil;
+#define irsensor A0
+#define irsensor1 A1
+#define SPEEDL           60     //algemene snelheid
+#define SPEEDR           60
+
+ZumoMotors motors;
+Pushbutton button(ZUMO_BUTTON);
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  button.waitForButton();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  totaal = 0;
+  totaal1 = 0;
+  gem = 0;
+  gem1 = 0;
+  for(int i = 0; i < 30; i++){
+    //digitalWrite(led, HIGH);
+    delay(1);
+    value=analogRead(irsensor); //IR sensor rechts
+    value1=analogRead(irsensor1); //IR sensor links
+    totaal = totaal + value;
+    totaal1= totaal1 + value1;
+  }
+  gem = totaal/30;
+  gem1 = totaal1/30;
+  verschil = gem - gem1;
+  if(verschil < -10){ //sturen naar links
+    motors.setLeftSpeed(SPEEDL);
+    motors.setRightSpeed(SPEEDR + 20);
+    Serial.println("NAAR LINKS");
+  }
+  if(verschil > 10){  //sturen naar rechts
+    motors.setLeftSpeed(SPEEDL + 20);
+    motors.setRightSpeed(SPEEDR);
+    Serial.println("NAAR RECHTS");
+  }
+  if((verschil > -10)&&(verschil < 10)){
+    motors.setLeftSpeed(SPEEDL);
+    motors.setRightSpeed(SPEEDR);
+    Serial.println("Gaat goed zo");
+  }
+}
