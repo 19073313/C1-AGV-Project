@@ -1,0 +1,151 @@
+#include <ZumoMotors.h>
+#include <Pushbutton.h>
+#include <Wire.h>
+#include <TCS3200.h> 
+
+uint8_t RGBvalue[3];
+TCS3200 colSens; 
+
+const int USLO = A4;  //trigPin ultrasoon links
+const int USLI = A5;  //echoPin ultrasoon links
+const int USRO = A2;  //trigPin ultrasoon rechts
+const int USRI = A3;  //echoPin ultrasoon rechts
+long duratie, afstand, USL, USR; //duratie, afstand, ultrasoon sensor links, ultrasoon sensor rechts
+int value, gem, totaal,value1, gem1, totaal1, verschil, x, y;
+
+#define irsensor A0
+#define irsensor1 A1
+#define SPEEDL           65     //algemene snelheid
+#define SPEEDR           60
+#define STOP             0
+#define DRAAIEN          120
+
+ZumoMotors motors;
+Pushbutton button(ZUMO_BUTTON);
+
+void setup() {
+  pinMode(USLO, OUTPUT);
+  pinMode(USLI, INPUT);
+  pinMode(USRO, OUTPUT);
+  pinMode(USRI, INPUT);
+  Serial.begin(115200);
+  x = 0;
+  y = 3;
+  colSens.begin();
+  button.waitForButton();
+}
+
+void loop() {
+  totaal = 0;
+  totaal1 = 0;
+  gem = 0;
+  gem1 = 0;
+  if(y == 3){
+    AfstandMeten (USLO, USLI);
+    USL = afstand;
+    delay(20);
+    AfstandMeten (USRO, USRI); 
+    USR = afstand;
+    y = 0;
+  }
+  y++;
+  colSens.loop(); 
+  colSens.getRGB (RGBvalue);
+  if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=140 && RGBvalue[1]<=175)&&(RGBvalue[2]>=115 && RGBvalue[2]<=160)){ //minimale en maximale RGB waardes voor Groen
+    motors.setLeftSpeed(STOP);
+    motors.setRightSpeed(STOP);
+    Serial.println("Groen");
+    delay(2000);
+    colSens.loop(); 
+    colSens.getRGB (RGBvalue);
+  }
+  if(USR <= 10){ //afstand too buitenrand om te draaien naar volgende pad
+    if(x == 2){ //einde cyclus
+      while(1){
+        motors.setLeftSpeed(STOP);
+        motors.setRightSpeed(STOP);
+        Serial.println("STOP");
+      }
+    }
+    if(x == 1){ //bocht2
+      bocht2();
+      x = 2;
+    }
+    if(x == 0){ //bocht1
+      bocht1();
+      x = 1;
+    }
+    AfstandMeten (USLO, USLI);
+    USL = afstand;
+    delay(20);
+    AfstandMeten (USRO, USRI); 
+    USR = afstand;
+  }
+  
+  while(USL <= 5){   //iemand op het pad = stoppen
+    motors.setLeftSpeed(STOP);
+    motors.setRightSpeed(STOP);
+    AfstandMeten (USRO, USRI);
+    USR = afstand;
+  }
+  for(int i = 0; i < 30; i++){
+    delay(1);
+    value=analogRead(irsensor); //IR sensor rechts
+    value1=analogRead(irsensor1); //IR sensor links
+    totaal = totaal + value;
+    totaal1= totaal1 + value1;
+  }
+  gem = totaal/30;
+  gem1 = totaal1/30;
+  verschil = gem - gem1;
+  if(verschil < -10){ //sturen naar links
+    motors.setLeftSpeed(SPEEDL - 20);
+    motors.setRightSpeed(SPEEDR + 20);
+  }
+  if(verschil > 10){  //sturen naar rechts
+    motors.setLeftSpeed(SPEEDL + 20);
+    motors.setRightSpeed(SPEEDR - 20);
+  }
+  if((verschil > -10)&&(verschil < 10)){
+    motors.setLeftSpeed(SPEEDL);
+    motors.setRightSpeed(SPEEDR);
+  }
+}
+
+void AfstandMeten (int trigPin, int echoPin){
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duratie = pulseIn(echoPin, HIGH);
+  afstand = duratie*0.034/2;
+}
+
+void bocht1(){
+  for(int i = 0; i < 2000; i++){
+    motors.setRightSpeed(STOP);
+    motors.setLeftSpeed(DRAAIEN);
+    delay(1);
+  }
+  for(int i = 0; i < 1600; i++){
+    motors.setRightSpeed(SPEEDR);
+    motors.setLeftSpeed(SPEEDL);
+    delay(1);
+  }
+  for(int i = 0; i < 2100; i++){
+    motors.setRightSpeed(STOP);
+    motors.setLeftSpeed(DRAAIEN);
+    delay(1);
+  }
+  motors.setRightSpeed(SPEEDR);
+  motors.setLeftSpeed(SPEEDL);
+}
+
+void bocht2(){
+  for(int i = 0; i < 1750; i++){
+    motors.setRightSpeed(DRAAIEN);
+    motors.setLeftSpeed(-DRAAIEN);
+    delay(1);
+  }
+}
