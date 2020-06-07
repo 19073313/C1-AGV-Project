@@ -6,36 +6,71 @@
 uint8_t RGBvalue[3];
 TCS3200 colSens; 
 
+#define irsensor A0
+#define irsensor1 A1
+#define SPEEDLVOLGEN  100  //snelheid linker motor in volgmodus
+#define SPEEDL        65   //snelheid linker motor in autonoom modus
+#define SPEEDRVOLGEN  100  //snelheid rechter motor in volgmodus
+#define SPEEDR        60   //snelheid rechter motor in autonoom modus
+#define TURNINGVOLGEN 100  //snelheid van het draaien en volgmodus
+#define DRAAIEN       120  //snelheid draaien in autonoom modus
+#define STOP 0  //snelheid van motoren bij het stoppen
+
+int volgenState = 0;
+int autonoomState = 0;
+int noodstopState = 0;
+
+const int Volgen = 3; //Knop voor volgen
+const int Noodstop = 11;  //Noodstop knop
+const int Autonoom = 12;  //Knop voor autonoom
 const int USLO = A4;  //trigPin ultrasoon links
 const int USLI = A5;  //echoPin ultrasoon links
 const int USRO = A2;  //trigPin ultrasoon rechts
 const int USRI = A3;  //echoPin ultrasoon rechts
+const int Led = 4;
+
 long duratie, afstand, USL, USR; //duratie, afstand, ultrasoon sensor links, ultrasoon sensor rechts
 int value, gem, totaal,value1, gem1, totaal1, verschil, x, y;
-
-#define irsensor A0
-#define irsensor1 A1
-#define SPEEDL           65     //algemene snelheid
-#define SPEEDR           60
-#define STOP             0
-#define DRAAIEN          120
 
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON);
 
 void setup() {
-  pinMode(USLO, OUTPUT);
-  pinMode(USLI, INPUT);
-  pinMode(USRO, OUTPUT);
-  pinMode(USRI, INPUT);
-  Serial.begin(115200);
+  pinMode(Volgen, INPUT);
+  pinMode(Noodstop, INPUT);
+  pinMode(Autonoom, INPUT);
+  pinMode(Led, OUTPUT);
+  pinMode(USLO, OUTPUT);  //trigpin ultrasoon links
+  pinMode(USLI, INPUT); //echopin ultrasoon links
+  pinMode(USRO, OUTPUT);  //trigpin ultrasoon rechts
+  pinMode(USRI, INPUT); //echopin ultrasoon rechts
   x = 0;
   y = 3;
   colSens.begin();
-  button.waitForButton();
+  Serial.begin(9600);
+  digitalWrite(Led, HIGH);
 }
 
 void loop() {
+  volgenState = digitalRead(Volgen);  //status van de volgen knop (ingedrukt of niet)
+  autonoomState = digitalRead(Autonoom);  //status van de autonoom knop (ingedrukt of niet)
+  noodstopState = digitalRead(Noodstop);  //status van de noodstop (ingedrukt of niet)
+  if(volgenState == HIGH){  //Knop voor volgen is ingedrukt, start volg modus
+    VolgenModus();
+    digitalWrite(Led, LOW);
+  }
+  if(autonoomState == HIGH){  //knop voor autonoom is ingedrukt, start autonoom modus
+    AutonoomModus();
+    digitalWrite(Led, LOW);
+  }
+  if(noodstopState == HIGH){  //Noodstop is ingedrukt
+    motors.setSpeeds(STOP, STOP);
+    digitalWrite(Led, HIGH);
+  }
+}
+
+void AutonoomModus(){
+ while(noodstopState == LOW){
   totaal = 0;
   totaal1 = 0;
   gem = 0;
@@ -51,7 +86,7 @@ void loop() {
   y++;
   colSens.loop(); 
   colSens.getRGB (RGBvalue);
-  if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=140 && RGBvalue[1]<=175)&&(RGBvalue[2]>=115 && RGBvalue[2]<=160)){ //minimale en maximale RGB waardes voor Groen
+  if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=150 && RGBvalue[1]<=175)&&(RGBvalue[2]>=115 && RGBvalue[2]<=160)){ //minimale en maximale RGB waardes voor Groen
     motors.setLeftSpeed(STOP);
     motors.setRightSpeed(STOP);
     Serial.println("Groen");
@@ -61,10 +96,14 @@ void loop() {
   }
   if(USR <= 10){ //afstand too buitenrand om te draaien naar volgende pad
     if(x == 2){ //einde cyclus
-      while(1){
+      while(noodstopState == LOW){
+        noodstopState = digitalRead(Noodstop);
+        digitalWrite(Led, HIGH);
+        delay(50);
         motors.setLeftSpeed(STOP);
         motors.setRightSpeed(STOP);
-        Serial.println("STOP");
+        digitalWrite(Led, LOW);
+        delay(50);
       }
     }
     if(x == 1){ //bocht2
@@ -75,6 +114,9 @@ void loop() {
       bocht1();
       x = 1;
     }
+    if(noodstopState == HIGH){
+      x = 0;
+    }
     AfstandMeten (USLO, USLI);
     USL = afstand;
     delay(20);
@@ -82,12 +124,15 @@ void loop() {
     USR = afstand;
   }
   
-  while(USL <= 5){   //iemand op het pad = stoppen
+  while((USL <= 5)&&(noodstopState == LOW)){   //iemand op het pad = stoppen
+    noodstopState = digitalRead(Noodstop);
+    digitalWrite(Led, HIGH);
     motors.setLeftSpeed(STOP);
     motors.setRightSpeed(STOP);
-    AfstandMeten (USRO, USRI);
-    USR = afstand;
+    AfstandMeten (USLO, USLI);
+    USL = afstand;
   }
+  digitalWrite(Led, LOW);
   for(int i = 0; i < 30; i++){
     delay(1);
     value=analogRead(irsensor); //IR sensor rechts
@@ -110,6 +155,61 @@ void loop() {
     motors.setLeftSpeed(SPEEDL);
     motors.setRightSpeed(SPEEDR);
   }
+  noodstopState = digitalRead(Noodstop);
+ }
+}
+
+void VolgenModus(){ //functie voor volgmodus
+  SensorMeten();
+  while(noodstopState == LOW){
+    noodstopState = digitalRead(Noodstop);
+    motors.setLeftSpeed(SPEEDLVOLGEN);   //rechtdoor rijden
+    motors.setRightSpeed(SPEEDRVOLGEN);
+    SensorMeten();
+    while((((USL>=5)&&(USR>=5))&&((USL<=40)&&(USR<=40)))&&(noodstopState == LOW)){  //als de afstand links en rechts meer dan 5 cm is, rechtdoor rijden
+      noodstopState = digitalRead(Noodstop);
+      motors.setLeftSpeed(SPEEDLVOLGEN);
+      motors.setRightSpeed(SPEEDRVOLGEN);
+      SensorMeten();
+      while(((USR>=31)&&(USL<31))&&(noodstopState == LOW)){   //naar links sturen
+        noodstopState = digitalRead(Noodstop);
+        motors.setLeftSpeed(-TURNINGVOLGEN);
+        motors.setRightSpeed(TURNINGVOLGEN);
+        SensorMeten();
+        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
+          noodstopState = digitalRead(Noodstop);
+          motors.setLeftSpeed(-TURNINGVOLGEN);
+          motors.setRightSpeed(TURNINGVOLGEN);
+          SensorMeten();
+        }
+      }
+      while(((USL>=31)&&(USR<31))&&(noodstopState == LOW)){   //naar rechts sturen
+        noodstopState = digitalRead(Noodstop);
+        motors.setLeftSpeed(TURNINGVOLGEN);
+        motors.setRightSpeed(-TURNINGVOLGEN);
+        SensorMeten();
+        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
+          noodstopState = digitalRead(Noodstop);
+          motors.setLeftSpeed(TURNINGVOLGEN);
+          motors.setRightSpeed(-TURNINGVOLGEN);
+          SensorMeten();
+        }
+      }
+   }
+   while((((USL<5)||(USR<5))||((USL>40)&&(USR>40)))&&(noodstopState == LOW)){
+     noodstopState = digitalRead(Noodstop);
+     motors.setSpeeds(STOP, STOP);
+     SensorMeten();
+   }
+  }
+}
+
+void SensorMeten (){
+  AfstandMeten (USLO, USLI);
+  USL = afstand;
+  delay(10);
+  AfstandMeten (USRO, USRI);
+  USR = afstand;
 }
 
 void AfstandMeten (int trigPin, int echoPin){
