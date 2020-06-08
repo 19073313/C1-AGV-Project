@@ -8,12 +8,12 @@ TCS3200 colSens;
 
 #define irsensor A0
 #define irsensor1 A1
-#define SPEEDLVOLGEN  100  //snelheid linker motor in volgmodus
+#define SPEEDLVOLGEN  80  //snelheid linker motor in volgmodus
 #define SPEEDL        65   //snelheid linker motor in autonoom modus
-#define SPEEDRVOLGEN  100  //snelheid rechter motor in volgmodus
+#define SPEEDRVOLGEN  80  //snelheid rechter motor in volgmodus
 #define SPEEDR        60   //snelheid rechter motor in autonoom modus
-#define TURNINGVOLGEN 100  //snelheid van het draaien en volgmodus
-#define DRAAIEN       120  //snelheid draaien in autonoom modus
+#define TURNINGVOLGEN 120  //snelheid van het draaien en volgmodus
+#define DRAAIEN       100  //snelheid draaien in autonoom modus
 #define STOP 0  //snelheid van motoren bij het stoppen
 
 int volgenState = 0;
@@ -56,12 +56,12 @@ void loop() {
   autonoomState = digitalRead(Autonoom);  //status van de autonoom knop (ingedrukt of niet)
   noodstopState = digitalRead(Noodstop);  //status van de noodstop (ingedrukt of niet)
   if(volgenState == HIGH){  //Knop voor volgen is ingedrukt, start volg modus
-    VolgenModus();
     digitalWrite(Led, LOW);
+    VolgenModus();
   }
   if(autonoomState == HIGH){  //knop voor autonoom is ingedrukt, start autonoom modus
-    AutonoomModus();
     digitalWrite(Led, LOW);
+    AutonoomModus();
   }
   if(noodstopState == HIGH){  //Noodstop is ingedrukt
     motors.setSpeeds(STOP, STOP);
@@ -89,8 +89,12 @@ void AutonoomModus(){
   if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=150 && RGBvalue[1]<=175)&&(RGBvalue[2]>=115 && RGBvalue[2]<=160)){ //minimale en maximale RGB waardes voor Groen
     motors.setLeftSpeed(STOP);
     motors.setRightSpeed(STOP);
-    Serial.println("Groen");
-    delay(2000);
+    for(int i = 0; i < 4; i++){
+    digitalWrite(Led, HIGH);
+    delay(200);
+    digitalWrite(Led, LOW);
+    delay(200);
+    }
     colSens.loop(); 
     colSens.getRGB (RGBvalue);
   }
@@ -144,12 +148,12 @@ void AutonoomModus(){
   gem1 = totaal1/30;
   verschil = gem - gem1;
   if(verschil < -10){ //sturen naar links
-    motors.setLeftSpeed(SPEEDL - 20);
-    motors.setRightSpeed(SPEEDR + 20);
+    motors.setLeftSpeed(SPEEDL - 30);
+    motors.setRightSpeed(SPEEDR + 30);
   }
   if(verschil > 10){  //sturen naar rechts
-    motors.setLeftSpeed(SPEEDL + 20);
-    motors.setRightSpeed(SPEEDR - 20);
+    motors.setLeftSpeed(SPEEDL + 30);
+    motors.setRightSpeed(SPEEDR - 30);
   }
   if((verschil > -10)&&(verschil < 10)){
     motors.setLeftSpeed(SPEEDL);
@@ -162,6 +166,7 @@ void AutonoomModus(){
 void VolgenModus(){ //functie voor volgmodus
   SensorMeten();
   while(noodstopState == LOW){
+    digitalWrite(Led, LOW);
     noodstopState = digitalRead(Noodstop);
     motors.setLeftSpeed(SPEEDLVOLGEN);   //rechtdoor rijden
     motors.setRightSpeed(SPEEDRVOLGEN);
@@ -173,12 +178,12 @@ void VolgenModus(){ //functie voor volgmodus
       SensorMeten();
       while(((USR>=31)&&(USL<31))&&(noodstopState == LOW)){   //naar links sturen
         noodstopState = digitalRead(Noodstop);
-        motors.setLeftSpeed(-TURNINGVOLGEN);
+        motors.setLeftSpeed(STOP);
         motors.setRightSpeed(TURNINGVOLGEN);
         SensorMeten();
         while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
           noodstopState = digitalRead(Noodstop);
-          motors.setLeftSpeed(-TURNINGVOLGEN);
+          motors.setLeftSpeed(STOP);
           motors.setRightSpeed(TURNINGVOLGEN);
           SensorMeten();
         }
@@ -186,12 +191,12 @@ void VolgenModus(){ //functie voor volgmodus
       while(((USL>=31)&&(USR<31))&&(noodstopState == LOW)){   //naar rechts sturen
         noodstopState = digitalRead(Noodstop);
         motors.setLeftSpeed(TURNINGVOLGEN);
-        motors.setRightSpeed(-TURNINGVOLGEN);
+        motors.setRightSpeed(STOP);
         SensorMeten();
         while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
           noodstopState = digitalRead(Noodstop);
           motors.setLeftSpeed(TURNINGVOLGEN);
-          motors.setRightSpeed(-TURNINGVOLGEN);
+          motors.setRightSpeed(STOP);
           SensorMeten();
         }
       }
@@ -200,6 +205,7 @@ void VolgenModus(){ //functie voor volgmodus
      noodstopState = digitalRead(Noodstop);
      motors.setSpeeds(STOP, STOP);
      SensorMeten();
+     digitalWrite(Led, HIGH);
    }
   }
 }
@@ -223,18 +229,18 @@ void AfstandMeten (int trigPin, int echoPin){
 }
 
 void bocht1(){
-  for(int i = 0; i < 2000; i++){
-    motors.setRightSpeed(STOP);
+  for(int i = 0; i < 1500; i++){
+    motors.setRightSpeed(-DRAAIEN);
     motors.setLeftSpeed(DRAAIEN);
     delay(1);
   }
-  for(int i = 0; i < 1600; i++){
+  for(int i = 0; i < 3200; i++){
     motors.setRightSpeed(SPEEDR);
     motors.setLeftSpeed(SPEEDL);
     delay(1);
   }
-  for(int i = 0; i < 2100; i++){
-    motors.setRightSpeed(STOP);
+  for(int i = 0; i < 1600; i++){
+    motors.setRightSpeed(-DRAAIEN);
     motors.setLeftSpeed(DRAAIEN);
     delay(1);
   }
@@ -243,7 +249,7 @@ void bocht1(){
 }
 
 void bocht2(){
-  for(int i = 0; i < 1750; i++){
+  for(int i = 0; i < 2700; i++){
     motors.setRightSpeed(DRAAIEN);
     motors.setLeftSpeed(-DRAAIEN);
     delay(1);
