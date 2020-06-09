@@ -1,49 +1,49 @@
-#include <ZumoMotors.h>
-#include <Pushbutton.h>
+#include <ZumoMotors.h>   //Alle library's die gebruikt zijn.
+#include <Pushbutton.h>   
 #include <Wire.h>
-#include <TCS3200.h> 
+#include <TCS3200.h>  //kleurensensor library
 
-uint8_t RGBvalue[3];
+uint8_t RGBvalue[3];  //array om RGB waardes op te slaan
 TCS3200 colSens; 
 
-#define irsensor A0
-#define irsensor1 A1
-#define SPEEDLVOLGEN  80  //snelheid linker motor in volgmodus
-#define SPEEDL        65   //snelheid linker motor in autonoom modus
-#define SPEEDRVOLGEN  80  //snelheid rechter motor in volgmodus
-#define SPEEDR        60   //snelheid rechter motor in autonoom modus
-#define TURNINGVOLGEN 120  //snelheid van het draaien en volgmodus
-#define DRAAIEN       100  //snelheid draaien in autonoom modus
-#define STOP 0  //snelheid van motoren bij het stoppen
+#define irsensor A0         //aansluiting rechter IR sensor
+#define irsensor1 A1        //aansluiting linker IR sensor
+#define SPEEDLVOLGEN  80    //snelheid linker motor in volgmodus
+#define SPEEDL        56    //snelheid linker motor in autonoom modus
+#define SPEEDRVOLGEN  80    //snelheid rechter motor in volgmodus
+#define SPEEDR        53    //snelheid rechter motor in autonoom modus
+#define TURNINGVOLGEN 120   //snelheid van het draaien en volgmodus
+#define DRAAIEN       100   //snelheid draaien in autonoom modus
+#define STOP 0              //snelheid van motoren bij het stoppen
 
-int volgenState = 0;
-int autonoomState = 0;
-int noodstopState = 0;
+int volgenState = 0;        //status van de knop voor het volgen
+int autonoomState = 0;      //status van de knop voor autonoom
+int noodstopState = 0;      //status van de noodstop knop
 
-const int Volgen = 3; //Knop voor volgen
+const int Volgen = 3;     //Knop voor volgen
 const int Noodstop = 11;  //Noodstop knop
 const int Autonoom = 12;  //Knop voor autonoom
-const int USLO = A4;  //trigPin ultrasoon links
-const int USLI = A5;  //echoPin ultrasoon links
-const int USRO = A2;  //trigPin ultrasoon rechts
-const int USRI = A3;  //echoPin ultrasoon rechts
-const int Led = 4;
+const int USLO = A4;      //trigPin ultrasoon links
+const int USLI = A5;      //echoPin ultrasoon links
+const int USRO = A2;      //trigPin ultrasoon rechts
+const int USRI = A3;      //echoPin ultrasoon rechts
+const int Led = 4;        //pin van het ledje
 
 long duratie, afstand, USL, USR; //duratie, afstand, ultrasoon sensor links, ultrasoon sensor rechts
-int value, gem, totaal,value1, gem1, totaal1, verschil, x, y;
+int value, gem, totaal,value1, gem1, totaal1, verschil, x, y; 
 
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON);
 
 void setup() {
-  pinMode(Volgen, INPUT);
-  pinMode(Noodstop, INPUT);
-  pinMode(Autonoom, INPUT);
-  pinMode(Led, OUTPUT);
-  pinMode(USLO, OUTPUT);  //trigpin ultrasoon links
-  pinMode(USLI, INPUT); //echopin ultrasoon links
-  pinMode(USRO, OUTPUT);  //trigpin ultrasoon rechts
-  pinMode(USRI, INPUT); //echopin ultrasoon rechts
+  pinMode(Volgen, INPUT);     //knopje voor volgen
+  pinMode(Noodstop, INPUT);   //knopje voor noodstop
+  pinMode(Autonoom, INPUT);   //knopje voor autonoom
+  pinMode(Led, OUTPUT);       //Ledje
+  pinMode(USLO, OUTPUT);      //trigpin ultrasoon links
+  pinMode(USLI, INPUT);       //echopin ultrasoon links
+  pinMode(USRO, OUTPUT);      //trigpin ultrasoon rechts
+  pinMode(USRI, INPUT);       //echopin ultrasoon rechts
   x = 0;
   y = 3;
   colSens.begin();
@@ -51,16 +51,22 @@ void setup() {
   digitalWrite(Led, HIGH);
 }
 
-void loop() {
+/*==================================================================================
+ In de onderstaande loop wordt gekeken welk knopje ingedrukt is en welke modus dus
+ gebruikt gaat worden. 
+ =================================================================================*/
+void loop() { 
   volgenState = digitalRead(Volgen);  //status van de volgen knop (ingedrukt of niet)
   autonoomState = digitalRead(Autonoom);  //status van de autonoom knop (ingedrukt of niet)
   noodstopState = digitalRead(Noodstop);  //status van de noodstop (ingedrukt of niet)
   if(volgenState == HIGH){  //Knop voor volgen is ingedrukt, start volg modus
     digitalWrite(Led, LOW);
+    delay(1000);
     VolgenModus();
   }
   if(autonoomState == HIGH){  //knop voor autonoom is ingedrukt, start autonoom modus
     digitalWrite(Led, LOW);
+    delay(1000);
     AutonoomModus();
   }
   if(noodstopState == HIGH){  //Noodstop is ingedrukt
@@ -68,26 +74,30 @@ void loop() {
     digitalWrite(Led, HIGH);
   }
 }
-
+/*=================================================================================
+ Hieronder is de functie voor autonoom modus gecodeerd, deze functie gedraagt zich
+ als een loop door de while statement. Het programma zal hierin blijven tot er op 
+ de noodstop/stop knop gedrukt wordt (gedeelde knop wegens een gebrek aan pinnen)
+ ================================================================================*/
 void AutonoomModus(){
  while(noodstopState == LOW){
   totaal = 0;
   totaal1 = 0;
   gem = 0;
   gem1 = 0;
-  if(y == 3){
-    AfstandMeten (USLO, USLI);
+  if(y == 3){   //Om code te versnellen leest ultrasoon sensor maar eens per 4 keer dat de loop doorlopen is. 
+    AfstandMeten (USLO, USLI);  //Uitlezen van de afstand aan de linker kant
     USL = afstand;
     delay(20);
-    AfstandMeten (USRO, USRI); 
+    AfstandMeten (USRO, USRI);  //Uitlezen van de afstand aan de rechter kant
     USR = afstand;
     y = 0;
   }
   y++;
-  colSens.loop(); 
+  colSens.loop();               //beginnen met waarde lezen kleurensensor (RGB)
   colSens.getRGB (RGBvalue);
-  if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=150 && RGBvalue[1]<=175)&&(RGBvalue[2]>=115 && RGBvalue[2]<=160)){ //minimale en maximale RGB waardes voor Groen
-    motors.setLeftSpeed(STOP);
+  if((RGBvalue[0]>=110 && RGBvalue[0]<=170)&&(RGBvalue[1]>=115 && RGBvalue[1]<=150)&&(RGBvalue[2]>=100 && RGBvalue[2]<=160)){
+    motors.setLeftSpeed(STOP);    //Als de waardes overeen komen zal de AGV stoppen met rijden en het ledje laten knipperen.
     motors.setRightSpeed(STOP);
     for(int i = 0; i < 4; i++){
     digitalWrite(Led, HIGH);
@@ -98,9 +108,9 @@ void AutonoomModus(){
     colSens.loop(); 
     colSens.getRGB (RGBvalue);
   }
-  if(USR <= 10){ //afstand too buitenrand om te draaien naar volgende pad
-    if(x == 2){ //einde cyclus
-      while(noodstopState == LOW){
+  if(USR <= 9){ //afstand tot buitenrand om te draaien naar volgende pad.
+    if(x == 2){ //na bocht 2 stopt de AGV aan het einde van het pad.
+      while(noodstopState == LOW){    //In deze staat zal de AGV wachten tot er op de noodstop/stop knop gedrukt wordt om van modus te wisselen.
         noodstopState = digitalRead(Noodstop);
         digitalWrite(Led, HIGH);
         delay(50);
@@ -110,12 +120,12 @@ void AutonoomModus(){
         delay(50);
       }
     }
-    if(x == 1){ //bocht2
-      bocht2();
+    if(x == 1){ 
+      bocht2(); //functie voor bocht 2
       x = 2;
     }
-    if(x == 0){ //bocht1
-      bocht1();
+    if(x == 0){ 
+      bocht1(); //functie voor bocht 1
       x = 1;
     }
     if(noodstopState == HIGH){
@@ -128,7 +138,7 @@ void AutonoomModus(){
     USR = afstand;
   }
   
-  while((USL <= 5)&&(noodstopState == LOW)){   //iemand op het pad = stoppen
+  while((USL <= 5)&&(noodstopState == LOW)){   //iemand binnen 5cm van de AGV = stoppen
     noodstopState = digitalRead(Noodstop);
     digitalWrite(Led, HIGH);
     motors.setLeftSpeed(STOP);
@@ -137,63 +147,67 @@ void AutonoomModus(){
     USL = afstand;
   }
   digitalWrite(Led, LOW);
-  for(int i = 0; i < 30; i++){
+  for(int i = 0; i < 30; i++){ //Omdat de IR sensoren veel ruis geven worden er 30 metingen gedaan. Hiervan wordt daarna het gemiddelde genomen om de ruis te onderdrukken
     delay(1);
     value=analogRead(irsensor); //IR sensor rechts
     value1=analogRead(irsensor1); //IR sensor links
     totaal = totaal + value;
     totaal1= totaal1 + value1;
   }
-  gem = totaal/30;
-  gem1 = totaal1/30;
-  verschil = gem - gem1;
-  if(verschil < -10){ //sturen naar links
-    motors.setLeftSpeed(SPEEDL - 30);
-    motors.setRightSpeed(SPEEDR + 30);
+  gem = totaal/30;    //gemiddelde van de waarde rechts
+  gem1 = totaal1/30;  //gemiddelde van de waarde links
+  verschil = gem - gem1;  //Door het verschil hiervan te meten kan worden gekeken of de AGV wel in het midden van het pad rijdt.
+  if(verschil < -5){      //bijsturen naar links
+    motors.setLeftSpeed(SPEEDL - 20);
+    motors.setRightSpeed(SPEEDR + 20);
   }
-  if(verschil > 10){  //sturen naar rechts
-    motors.setLeftSpeed(SPEEDL + 30);
-    motors.setRightSpeed(SPEEDR - 30);
+  if(verschil > 5){       //bijsturen naar rechts
+    motors.setLeftSpeed(SPEEDL + 20);
+    motors.setRightSpeed(SPEEDR - 20);
   }
-  if((verschil > -10)&&(verschil < 10)){
+  if((verschil > -5)&&(verschil < 5)){  //Als de AGV in het midden rijdt dan rijdt de AGV gewoon rechtdoor.
     motors.setLeftSpeed(SPEEDL);
     motors.setRightSpeed(SPEEDR);
   }
-  noodstopState = digitalRead(Noodstop);
+  noodstopState = digitalRead(Noodstop);  //status van de noodstop/stop knop opvragen
  }
 }
-
-void VolgenModus(){ //functie voor volgmodus
-  SensorMeten();
+/*==================================================================================
+ Hieronder staat de functie voor de volg modus. Ook deze functie gedraagt zich als
+ een loop door de while functie die erin zit. Door op de noodstop/stop knop te drukken
+ kan je uit deze loop om een nieuwe modus te kiezen.
+ =================================================================================*/
+void VolgenModus(){ 
+  SensorMeten();    //Functie voor het uitlezen van de afstand die de ultrasoon meet
   while(noodstopState == LOW){
     digitalWrite(Led, LOW);
     noodstopState = digitalRead(Noodstop);
     motors.setLeftSpeed(SPEEDLVOLGEN);   //rechtdoor rijden
     motors.setRightSpeed(SPEEDRVOLGEN);
     SensorMeten();
-    while((((USL>=5)&&(USR>=5))&&((USL<=40)&&(USR<=40)))&&(noodstopState == LOW)){  //als de afstand links en rechts meer dan 5 cm is, rechtdoor rijden
+    while((((USL>=5)&&(USR>=5))&&((USL<=40)&&(USR<=40)))&&(noodstopState == LOW)){  //als de afstand links en rechts meer dan 5 cm is, maar minder dan 40 cm. Dan rechtdoor rijden.
       noodstopState = digitalRead(Noodstop);
       motors.setLeftSpeed(SPEEDLVOLGEN);
       motors.setRightSpeed(SPEEDRVOLGEN);
       SensorMeten();
-      while(((USR>=31)&&(USL<31))&&(noodstopState == LOW)){   //naar links sturen
+      while(((USR>=31)&&(USL<31))&&(noodstopState == LOW)){   //Als de rechter ultrasoon de persoon niet meer ziet, maar de linker wel dan moet de AGV naar links bijsturen.
         noodstopState = digitalRead(Noodstop);
         motors.setLeftSpeed(STOP);
         motors.setRightSpeed(TURNINGVOLGEN);
-        SensorMeten();
-        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
+        SensorMeten(); 
+        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){  //Als de persoon ook voor de linker sensor verdwijnt dan blijft hij bijdraaien tot hij weer zicht krijgt op de persoon.
           noodstopState = digitalRead(Noodstop);
           motors.setLeftSpeed(STOP);
           motors.setRightSpeed(TURNINGVOLGEN);
           SensorMeten();
         }
       }
-      while(((USL>=31)&&(USR<31))&&(noodstopState == LOW)){   //naar rechts sturen
+      while(((USL>=31)&&(USR<31))&&(noodstopState == LOW)){   //Als de linker ultrasoon de persoon niet meer ziet, maar de rechter wel dan moet de AGV naar links bijsturen.
         noodstopState = digitalRead(Noodstop);
         motors.setLeftSpeed(TURNINGVOLGEN);
         motors.setRightSpeed(STOP);
         SensorMeten();
-        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){
+        while(((USL>40)&&(USR>40))&&(noodstopState == LOW)){  //Als de persoon ook voor de rechter sensor verdwijnt dan blijft hij bijdraaien tot hij weer zicht krijgt op de persoon.
           noodstopState = digitalRead(Noodstop);
           motors.setLeftSpeed(TURNINGVOLGEN);
           motors.setRightSpeed(STOP);
@@ -201,7 +215,7 @@ void VolgenModus(){ //functie voor volgmodus
         }
       }
    }
-   while((((USL<5)||(USR<5))||((USL>40)&&(USR>40)))&&(noodstopState == LOW)){
+   while((((USL<5)||(USR<5))||((USL>40)&&(USR>40)))&&(noodstopState == LOW)){ //Als de afstand tot de persoon kleiner wordt dan 5 cm of groter dan 40 cm, dan stopt de AGV met rijden en gaat de waarschuwingsled aan.
      noodstopState = digitalRead(Noodstop);
      motors.setSpeeds(STOP, STOP);
      SensorMeten();
@@ -210,7 +224,7 @@ void VolgenModus(){ //functie voor volgmodus
   }
 }
 
-void SensorMeten (){
+void SensorMeten (){    //functie voor het meten van de afstand bij de ultrasoon sensoren.
   AfstandMeten (USLO, USLI);
   USL = afstand;
   delay(10);
@@ -218,7 +232,7 @@ void SensorMeten (){
   USR = afstand;
 }
 
-void AfstandMeten (int trigPin, int echoPin){
+void AfstandMeten (int trigPin, int echoPin){   //het daadwerkelijk meten van de afstand van de ultrasoon sensoren.
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -228,18 +242,18 @@ void AfstandMeten (int trigPin, int echoPin){
   afstand = duratie*0.034/2;
 }
 
-void bocht1(){
-  for(int i = 0; i < 1500; i++){
+void bocht1(){      //functie voor bocht 1
+  for(int i = 0; i < 825; i++){
     motors.setRightSpeed(-DRAAIEN);
     motors.setLeftSpeed(DRAAIEN);
     delay(1);
   }
-  for(int i = 0; i < 3200; i++){
+  for(int i = 0; i < 4200; i++){
     motors.setRightSpeed(SPEEDR);
     motors.setLeftSpeed(SPEEDL);
     delay(1);
   }
-  for(int i = 0; i < 1600; i++){
+  for(int i = 0; i < 900; i++){
     motors.setRightSpeed(-DRAAIEN);
     motors.setLeftSpeed(DRAAIEN);
     delay(1);
@@ -248,8 +262,8 @@ void bocht1(){
   motors.setLeftSpeed(SPEEDL);
 }
 
-void bocht2(){
-  for(int i = 0; i < 2700; i++){
+void bocht2(){      //functie voor bocht 2
+  for(int i = 0; i < 1700; i++){
     motors.setRightSpeed(DRAAIEN);
     motors.setLeftSpeed(-DRAAIEN);
     delay(1);
